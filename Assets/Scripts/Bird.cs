@@ -1,7 +1,13 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class Bird : MonoBehaviour
 {
+    [SerializeField]
+    private float _launchForce = 500;
+    [SerializeField]
+    private float _maxDragDistance = 5;
+
     private Vector2 _startPosition;
     private Rigidbody2D _rigidbody2D;
     private SpriteRenderer _spriteRanderer;
@@ -30,7 +36,7 @@ public class Bird : MonoBehaviour
         direction.Normalize();
 
         _rigidbody2D.isKinematic = false;
-        _rigidbody2D.AddForce(direction * 500);
+        _rigidbody2D.AddForce(direction * _launchForce);
 
         _spriteRanderer.color = Color.white;
     }
@@ -38,11 +44,39 @@ public class Bird : MonoBehaviour
     private void OnMouseDrag()
     {
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        transform.position = new Vector3(mousePosition.x, mousePosition.y, transform.position.z);
+
+        Vector2 desiredPosition = mousePosition;
+
+        float distance = Vector2.Distance(desiredPosition, _startPosition);
+        if (distance > _maxDragDistance)
+        {
+            Vector2 direction = desiredPosition - _startPosition;
+            direction.Normalize();
+            desiredPosition = _startPosition + direction * _maxDragDistance;
+        }
+
+        if (desiredPosition.x > _startPosition.x)
+            desiredPosition.x = _startPosition.x;
+
+        _rigidbody2D.position = desiredPosition;
     }
 
     void Update()
     {
 
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        StartCoroutine(ResetAfterDelay());
+    }
+
+    private IEnumerator ResetAfterDelay()
+    {
+        yield return new WaitForSeconds(3);
+
+        _rigidbody2D.position = _startPosition;
+        _rigidbody2D.isKinematic = true;
+        _rigidbody2D.velocity = Vector2.zero;
     }
 }
